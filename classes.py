@@ -1,135 +1,160 @@
 import math
 from selenium.webdriver.common.by import By
 from loguru import logger
+from termcolor import colored
 
 
 class Acao:
     def __init__(self, ticker, driver):
         self.ticker = ticker
         self.driver = driver
-        self.momento = 0
-        self.indicadores_de_momento = {
-            "cotacao": {
-                "identificador": "/html/body/div[1]/div[2]/table[1]/tbody/tr[1]/td[4]/span",
-                "valor": "",
+        self.moment = 0
+        self.moment_indicators = {
+            "price": {
+                "identifier": "/html/body/div[1]/div[2]/table[1]/tbody/tr[1]/td[4]/span",
+                "value": "",
             },
             "pvp": {
-                "identificador": "/html/body/div[1]/div[2]/table[3]/tbody/tr[3]/td[4]/span",
-                "valor": "",
+                "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[3]/td[4]/span",
+                "value": "",
             },
             "pl": {
-                "identificador": "/html/body/div[1]/div[2]/table[3]/tbody/tr[2]/td[4]/span",
-                "valor": "",
+                "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[2]/td[4]/span",
+                "value": "",
             },
             "dy": {
-                "identificador": "/html/body/div[1]/div[2]/table[3]/tbody/tr[9]/td[4]/span",
-                "valor": "",
+                "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[9]/td[4]/span",
+                "value": "",
             },
             "psr": {
-                "identificador": "/html/body/div[1]/div[2]/table[3]/tbody/tr[5]/td[4]/span",
-                "valor": "",
+                "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[5]/td[4]/span",
+                "value": "",
             },
             "lpa": {
-                "identificador": "/html/body/div[1]/div[2]/table[3]/tbody/tr[2]/td[6]/span",
-                "valor": "",
+                "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[2]/td[6]/span",
+                "value": "",
             },
             "vpa": {
-                "identificador": "/html/body/div[1]/div[2]/table[3]/tbody/tr[3]/td[6]/span",
-                "valor": "",
+                "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[3]/td[6]/span",
+                "value": "",
             },
         }
 
-        self._setar_indicadores()
-        self._calcular_momento_momentaneo()
+        self.__set_indicators()
+        self.__transient_moment_calculation()
 
-    def _setar_indicadores(self):
+    def __set_indicators(self):
 
         self.driver.get(
             f"https://www.fundamentus.com.br/detalhes.php?papel={self.ticker}"
         )
 
-        for indicador in self.indicadores_de_momento.values():
-            indicador["valor"] = self.driver.find_element(
-                By.XPATH, indicador["identificador"]
+        for indicator in self.moment_indicators.values():
+            indicator["value"] = self.driver.find_element(
+                By.XPATH, indicator["identifier"]
             ).text.replace(",", ".")
 
-    def get_momento(self):
-        return self.momento
+    def get_moment(self):
+        return self.moment
 
-    def _calcular_momento_momentaneo(self):
-        momento = 0
-        momento += self._calcular_nota_pvp()
-        momento += self._calcular_nota_psr()
-        momento += self._calcular_nota_pl()
-        momento += self._calcular_dividend_yield()
-        momento += self._calcular_graham()
+    def __transient_moment_calculation(self):
+        moment = 0
+        moment += self._pvp_grade_calculation()
+        moment += self._psr_grade_calculation()
+        moment += self._pl_grade_calculation()
+        moment += self._dividend_yield_grade_calculation()
+        moment += self._graham_calculation()
 
-        self.momento = momento
+        self.moment = moment
 
-    def _calcular_nota_pvp(self):
+    def _pvp_grade_calculation(self):
         try:
-            pvp = float(self.indicadores_de_momento["pvp"]["valor"])
+            pvp = float(self.moment_indicators["pvp"]["value"])
             if pvp < 2:
+                print(colored(f"{self.ticker} PVP = {pvp}", "green"))
                 return 1
+            print(colored(f"{self.ticker} PVP = {pvp}", "red"))
         except Exception as error:
             logger.warning(
-                f"Erro ao calcular nota do PVP do ticker {self.ticker}: {error}"
+                f"Error calculating PVP indicator from ticker {self.ticker}: {error}"
             )
 
         return 0
 
-    def _calcular_nota_psr(self):
+    def _psr_grade_calculation(self):
         try:
-            psr = float(self.indicadores_de_momento["psr"]["valor"])
+            psr = float(self.moment_indicators["psr"]["value"])
             if psr < 2:
+                print(colored(f"{self.ticker} PSR = {psr}", "green"))
                 return 1
+            print(colored(f"{self.ticker} PSR = {psr}", "red"))
         except Exception as error:
             logger.warning(
-                f"Erro ao calcular nota do PSR do ticker {self.ticker}: {error}"
+                f"Error calculating PSR indicator from ticker {self.ticker}: {error}"
             )
 
         return 0
 
-    def _calcular_nota_pl(self):
+    def _pl_grade_calculation(self):
         try:
-            pl = float(self.indicadores_de_momento["pl"]["valor"])
+            pl = float(self.moment_indicators["pl"]["value"])
             if pl <= 6 and pl > 0:
+                print(colored(f"{self.ticker} PL = {pl}", "green"))
                 return 1
+            print(colored(f"{self.ticker} PL = {pl}", "red"))
         except Exception as error:
             logger.warning(
-                f"Erro ao calcular nota do PL do ticker {self.ticker}: {error}"
+                f"Error calculating PL indicator from ticker {self.ticker}: {error}"
             )
 
         return 0
 
-    def _calcular_dividend_yield(self):
+    def _dividend_yield_grade_calculation(self):
         try:
-            dy = self.indicadores_de_momento["dy"]["valor"]
+            dy = self.moment_indicators["dy"]["value"]
             dy = float(dy.replace("%", ""))
             if dy >= 4:
+                print(colored(f"{self.ticker} DY = {dy}", "green"))
                 return 1
+            print(colored(f"{self.ticker} DY = {dy}", "red"))
         except Exception as error:
             logger.warning(
-                f"Erro ao calcular nota do DY do ticker {self.ticker}: {error}"
+                f"Error calculating DY indicator from ticker {self.ticker}: {error}"
             )
 
         return 0
 
-    def _calcular_graham(self):
+    def _graham_calculation(self):
         nota = 0
 
         try:
-            cotacao = float(self.indicadores_de_momento["cotacao"]["valor"])
-            lpa = float(self.indicadores_de_momento["lpa"]["valor"])
-            vpa = float(self.indicadores_de_momento["vpa"]["valor"])
+            price = float(self.moment_indicators["price"]["value"])
+            lpa = float(self.moment_indicators["lpa"]["value"])
+            vpa = float(self.moment_indicators["vpa"]["value"])
             graham = math.sqrt(22.5 * lpa * vpa)
-
-            if cotacao < graham:
+            graham_margin = graham * 0.7
+            print(f"{self.ticker} Price = {price}")
+            if price < graham:
+                print(colored(f"{self.ticker} Graham = {graham}", "green"))
                 nota += 1
-                if cotacao < graham * 0.7:
+                if price < graham_margin:
+                    print(
+                        colored(
+                            f"{self.ticker} Graham Margin = {graham_margin}", "green"
+                        )
+                    )
                     nota += 1
+                else:
+                    print(
+                        colored(f"{self.ticker} Graham Margin = {graham_margin}", "red")
+                    )
+            else:
+                print(colored(f"{self.ticker} Graham = {graham}", "red"))
+                print(colored(f"{self.ticker} Graham Margin = {graham_margin}", "red"))
 
         except Exception as error:
-            logger.warning(f"Erro ao calcular Graham do ticker {self.ticker}: {error}")
+            logger.warning(
+                f"Error calculating Graham indicator from ticker {self.ticker}: {error}"
+            )
         finally:
             return nota

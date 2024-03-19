@@ -1,8 +1,8 @@
 # Carteira
-Mini projeto criado para automatizar minha carteira de investimentos e também testar meus conhecimentos em Python (3.12.1).
+Mini project created to automate my investment portfolio and also test my knowledge in Python (3.12.1).
 
-## Ideia inicial
-Criar uma forma rápida de calcular os valores recomendados de cada ação em carteira após análise do negócio e com os momentos de cada ação no mercado atualizados.
+## Initial idea
+Create a quick way to calculate the recommended values ​​of each share in the portfolio after analyzing the business and with the updated moments of each share in the market.
 
-## Observações
-As empresas presentes neste projeto não são recomendações de investimento e suas notas são fictícias, não utilize-as como base para suas análises.
+## Comments
+The companies present in this project are not investment recommendations and their ratings are fictitious, do not use them as a basis for your analyses.
