@@ -5,6 +5,7 @@ from pprint import pprint as pp
 
 
 def calculate_percentages(tickers: dict):
+    print("\nCalculating percentages for each Ticker:\n")
     nota_total = 0
     weights = []
 
@@ -31,11 +32,19 @@ def calculate_percentages(tickers: dict):
 
         driver.close()
 
+        weights = {}
         for ticker, values in tickers.items():
             final_weight = round(values["final grade"] / nota_total * 100, 2)
-            weights.append({f"{ticker}": f"{final_weight} %"})
-
-        return pp(weights)
+            weights.update({f"{ticker}": final_weight / 100})
+        
+        pp(weights)
+        
+        return weights
 
     except Exception as error:
         logger.error(error)
+
+def calculate_money_to_insert(money: int, weights: dict):
+    print("\nCalculating money to insert in each Ticker:\n")
+    for ticker, weight in weights.items():
+        print(f"{ticker} = ", money * weight)
