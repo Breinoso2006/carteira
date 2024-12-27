@@ -1,4 +1,4 @@
-import math
+import math, re
 from selenium.webdriver.common.by import By
 from loguru import logger
 from termcolor import colored
@@ -12,31 +12,31 @@ class Acao:
         self.moment_indicators = {
             "price": {
                 "identifier": "/html/body/div[1]/div[2]/table[1]/tbody/tr[1]/td[4]/span",
-                "value": "",
+                "identifier2": "/html/body/div/main/div[4]/div/div[1]/div[1]/div[2]/div/div/div/span/text()",
             },
             "pvp": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[3]/td[4]/span",
-                "value": "",
+                "identifier2": "/html/body/div/main/div[4]/div/div[1]/div[4]/div[2]/div/span/text()",
             },
             "pl": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[2]/td[4]/span",
-                "value": "",
+                "identifier2": "/html/body/div/main/div[4]/div/div[1]/div[2]/div[2]/div/span/text()",
             },
             "dy": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[9]/td[4]/span",
-                "value": "",
+                "identifier2": "/html/body/div/main/div[4]/div/div[1]/div[3]/div[2]/div/span/text()",
             },
             "psr": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[5]/td[4]/span",
-                "value": "",
+                "identifier2": "/html/body/div/main/div[4]/div/div[2]/div[3]/div[1]/div/div[7]/div[2]/span",
             },
             "lpa": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[2]/td[6]/span",
-                "value": "",
+                "identifier2": "/html/body/div/main/div[4]/div/div[2]/div[3]/div[1]/div/div[17]/div[2]/span",
             },
             "vpa": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[3]/td[6]/span",
-                "value": "",
+                "identifier2": "/html/body/div/main/div[4]/div/div[2]/div[3]/div[1]/div/div[16]/div[2]/span",
             },
         }
 
@@ -50,9 +50,22 @@ class Acao:
         )
 
         for indicator in self.moment_indicators.values():
-            indicator["value"] = self.driver.find_element(
+            value = self.driver.find_element(
                 By.XPATH, indicator["identifier"]
             ).text.replace(",", ".")
+
+            if value == None or not re.search(r'\d', value):
+                self.driver.get(
+                    f"https://analitica.auvp.com.br/ativos/{self.ticker}"
+                )
+                value = self.driver.find_element(
+                    By.XPATH, indicator["identifier2"]
+                ).text.replace(",", ".")
+                self.driver.get(
+                    f"https://www.fundamentus.com.br/detalhes.php?papel={self.ticker}"
+                )
+                
+            indicator["value"] = value
 
     def get_moment(self):
         return self.moment

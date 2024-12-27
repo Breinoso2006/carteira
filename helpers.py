@@ -42,6 +42,7 @@ def calculate_percentages(tickers: dict):
         return weights
 
     except Exception as error:
+        driver.close()
         logger.error(error)
 
 def calculate_money_to_insert(money: int, weights: dict):
