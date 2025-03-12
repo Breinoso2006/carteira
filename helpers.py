@@ -2,6 +2,7 @@ from loguru import logger
 from selenium import webdriver
 from classes import Acao
 from pprint import pprint as pp
+import math
 
 
 def calculate_percentages(tickers: dict):
@@ -17,16 +18,18 @@ def calculate_percentages(tickers: dict):
             print(f"{ticker} moment =  {values["moment"]} \n")
             transiente_grade = round(
                 values["fundamentalist grade"]
-                * (values["fundamentalist grade"] / 100 + values["moment"] / 6)
+                * (values["fundamentalist grade"] / 100 + math.sqrt(values["moment"] / 6))
                 / 2
             )
 
-            if transiente_grade >= 60:
+            if transiente_grade >= 75:
                 values["final grade"] = transiente_grade * 0.40
-            elif transiente_grade >= 50:
+            elif transiente_grade >= 65:
                 values["final grade"] = transiente_grade * 0.35
+            elif transiente_grade >= 55:
+                values["final grade"] = transiente_grade * 0.20
             else:
-                values["final grade"] = transiente_grade * 0.25
+                values["final grade"] = transiente_grade * 0.05
 
             nota_total += values["final grade"]
 

@@ -1,4 +1,5 @@
 import math, re
+from time import sleep
 from selenium.webdriver.common.by import By
 from loguru import logger
 from termcolor import colored
@@ -12,31 +13,31 @@ class Acao:
         self.moment_indicators = {
             "price": {
                 "identifier": "/html/body/div[1]/div[2]/table[1]/tbody/tr[1]/td[4]/span",
-                "identifier2": "/html/body/div/main/div[4]/div/div[1]/div[1]/div[2]/div/div/div/span/text()",
+                "identifier2": "//*[@id='asset-header']/div/div[1]/div[2]/div[1]/span",
             },
             "pvp": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[3]/td[4]/span",
-                "identifier2": "/html/body/div/main/div[4]/div/div[1]/div[4]/div[2]/div/span/text()",
+                "identifier2": "//*[@id='PAGE_CONTAINER']/main/div[3]/div/div[1]/div[2]/div/div[2]/div[2]/div[2]/p",
             },
             "pl": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[2]/td[4]/span",
-                "identifier2": "/html/body/div/main/div[4]/div/div[1]/div[2]/div[2]/div/span/text()",
+                "identifier2": "//*[@id='PAGE_CONTAINER']/main/div[3]/div/div[1]/div[2]/div/div[2]/div[2]/div[1]/p",
             },
             "dy": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[9]/td[4]/span",
-                "identifier2": "/html/body/div/main/div[4]/div/div[1]/div[3]/div[2]/div/span/text()",
+                "identifier2": "//*[@id='PAGE_CONTAINER']/main/div[3]/div/div[1]/div[2]/div/div[2]/div[2]/div[3]/p",
             },
             "psr": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[5]/td[4]/span",
-                "identifier2": "/html/body/div/main/div[4]/div/div[2]/div[3]/div[1]/div/div[7]/div[2]/span",
+                "identifier2": "//*[@id='PAGE_CONTAINER']/main/div[3]/div/div[2]/div[2]/div/div[2]/div[1]/div/div[8]/div[2]/span",
             },
             "lpa": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[2]/td[6]/span",
-                "identifier2": "/html/body/div/main/div[4]/div/div[2]/div[3]/div[1]/div/div[17]/div[2]/span",
+                "identifier2": "//*[@id='PAGE_CONTAINER']/main/div[3]/div/div[2]/div[2]/div/div[2]/div[1]/div/div[4]/div[2]/span",
             },
             "vpa": {
                 "identifier": "/html/body/div[1]/div[2]/table[3]/tbody/tr[3]/td[6]/span",
-                "identifier2": "/html/body/div/main/div[4]/div/div[2]/div[3]/div[1]/div/div[16]/div[2]/span",
+                "identifier2": "//*[@id='PAGE_CONTAINER']/main/div[3]/div/div[2]/div[2]/div/div[2]/div[1]/div/div[5]/div[2]/span",
             },
         }
 
@@ -50,22 +51,29 @@ class Acao:
         )
 
         for indicator in self.moment_indicators.values():
-            value = self.driver.find_element(
-                By.XPATH, indicator["identifier"]
-            ).text.replace(",", ".")
-
-            if value == None or not re.search(r'\d', value):
-                self.driver.get(
-                    f"https://analitica.auvp.com.br/ativos/{self.ticker}"
-                )
+            try:
                 value = self.driver.find_element(
-                    By.XPATH, indicator["identifier2"]
+                    By.XPATH, indicator["identifier"]
                 ).text.replace(",", ".")
-                self.driver.get(
-                    f"https://www.fundamentus.com.br/detalhes.php?papel={self.ticker}"
-                )
-                
-            indicator["value"] = value
+
+                if value == None or not re.search(r'\d', value):
+                    self.driver.get(
+                        f"https://analitica.auvp.com.br/ativos/{self.ticker}"
+                    )
+                    sleep(2)
+                    value = self.driver.find_element(
+                        By.XPATH, indicator["identifier2"]
+                    ).text.replace(",", ".")
+                    self.driver.get(
+                        f"https://www.fundamentus.com.br/detalhes.php?papel={self.ticker}"
+                    )
+                    
+                indicator["value"] = value
+            except Exception as error:
+                logger.warning(
+                f"Error while getting information about {self.ticker}: {error}"
+            )
+                indicator["value"] = 0
 
     def get_moment(self):
         return self.moment
@@ -97,7 +105,7 @@ class Acao:
     def _psr_grade_calculation(self):
         try:
             psr = float(self.moment_indicators["psr"]["value"])
-            if psr < 2:
+            if psr < 2 and psr > 0:
                 print(colored(f"{self.ticker} PSR = {psr}", "green"))
                 return 1
             print(colored(f"{self.ticker} PSR = {psr}", "red"))
@@ -111,7 +119,7 @@ class Acao:
     def _pl_grade_calculation(self):
         try:
             pl = float(self.moment_indicators["pl"]["value"])
-            if pl <= 6 and pl > 0:
+            if pl <= 8 and pl > 0:
                 print(colored(f"{self.ticker} PL = {pl}", "green"))
                 return 1
             print(colored(f"{self.ticker} PL = {pl}", "red"))
