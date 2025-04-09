@@ -5,17 +5,21 @@ from pprint import pprint as pp
 import math
 
 
-def calculate_percentages(tickers: dict):
-    print("\nCalculating percentages for each Ticker:\n")
+def calculate_percentages(tickers: dict, with_moment: bool = False):
+    print(f"\nCalculating percentages for each Ticker, with moment {with_moment}:\n")
     nota_total = 0
     weights = []
 
     try:
-        driver = webdriver.Safari()
+        if with_moment:
+            driver = webdriver.Safari()
 
         for ticker, values in tickers.items():
-            values["moment"] += Acao(ticker, driver).get_moment()
-            print(f"{ticker} moment =  {values["moment"]} \n")
+            if with_moment:
+                values["moment"] += Acao(ticker, driver).get_moment()
+                print(f"{ticker} moment =  {values["moment"]} \n")
+            else:
+                values["moment"] += 6
             transiente_grade = round(
                 values["fundamentalist grade"]
                 * (values["fundamentalist grade"] / 100 + math.sqrt(values["moment"] / 6))
@@ -25,15 +29,16 @@ def calculate_percentages(tickers: dict):
             if transiente_grade >= 70:
                 values["final grade"] = transiente_grade * 0.40
             elif transiente_grade >= 60:
-                values["final grade"] = transiente_grade * 0.35
+                values["final grade"] = transiente_grade * 0.30
             elif transiente_grade >= 50:
-                values["final grade"] = transiente_grade * 0.20
+                values["final grade"] = transiente_grade * 0.15
             else:
                 values["final grade"] = transiente_grade * 0.05
 
             nota_total += values["final grade"]
 
-        driver.close()
+        if with_moment:
+            driver.close()
 
         weights = {}
         for ticker, values in tickers.items():
