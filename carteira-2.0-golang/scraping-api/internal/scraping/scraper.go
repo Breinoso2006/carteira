@@ -67,6 +67,7 @@ func (s *SourceScraper) scrapeStockData(symbol string, body []byte) (*models.Sto
 	}{
 		{"price", &data.Price, "price"},
 		{"pe", &data.PE, "pe"},
+		{"pbv", &data.PBV, "pbv"},
 		{"psr", &data.PSR, "psr"},
 		{"bvps", &data.BVps, "bvps"},
 		{"eps", &data.EPS, "eps"},

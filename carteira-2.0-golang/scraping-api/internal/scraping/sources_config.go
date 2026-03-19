@@ -25,6 +25,7 @@ func getInvestidor10Config() SourceConfig {
 		Selectors: map[string]string{
 			"price": "#cards-ticker > div._card.cotacao > div._card-body > div > span",
 			"pe":    "#cards-ticker > div._card.val > div._card-body > span",
+			"pbv":   "#table-indicators > div:nth-child(3) > div.value.d-flex.justify-content-between.align-items-center > span",
 			"psr":   "#table-indicators > div:nth-child(2) > div.value.d-flex.justify-content-between.align-items-center > span",
 			"bvps":  "#table-indicators > div:nth-child(14) > div.value.d-flex.justify-content-between.align-items-center > span",
 			"eps":   "#table-indicators > div:nth-child(15) > div.value.d-flex.justify-content-between.align-items-center > span",
@@ -33,6 +34,7 @@ func getInvestidor10Config() SourceConfig {
 		Cleaners: map[string]func(string) string{
 			"price": cleanInvestidor10Price,
 			"pe":    cleanInvestidor10Numeric,
+			"pbv":   cleanInvestidor10Numeric,
 			"psr":   cleanInvestidor10Numeric,
 			"bvps":  cleanInvestidor10Price,
 			"eps":   cleanInvestidor10Price,
@@ -84,6 +86,7 @@ func getAuvpConfig() SourceConfig {
 		Selectors: map[string]string{
 			"price": "#asset-header > div > div.flex.w-full.items-center > div.w-fit.items-center.h-fit.ml-auto.flex > div.w-fit.h-fit.flex.items-center.justify-center.mr-2 > span",
 			"pe":    "#PAGE_CONTAINER > main > div.mx-2.md\\:mx-0 > div > div:nth-child(3) > div.w-full.max-w-\\[var\\(--max-width\\)\\].mx-auto.flex.flex-col > div > div:nth-child(2) > div.flex.w-full.flex-col.p-2.gap-4 > div:nth-child(1) > p",
+			"pbv":   "#PAGE_CONTAINER > main > div.mx-2.md\\:mx-0 > div > div:nth-child(3) > div.w-full.max-w-\\[var\\(--max-width\\)\\].mx-auto.flex.flex-col > div > div:nth-child(2) > div.flex.w-full.flex-col.p-2.gap-4 > div:nth-child(2) > p",
 			"psr":   "#PAGE_CONTAINER > main > div.mx-2.md\\:mx-0 > div > div:nth-child(6) > div.w-full.max-w-\\[var\\(--max-width\\)\\].mx-auto.flex.flex-col > div.bg-card.rounded-xl.p-4.relative.group.max-w-\\[100vw\\].w-full.mt-12 > div.md\\:px-6.md\\:pb-6.relative.mt-4.p-0.overflow-y-hidden > div:nth-child(1) > div > div:nth-child(8) > div.mt-auto.mb-1.flex.justify-between.items-center > span",
 			"bvps":  "#PAGE_CONTAINER > main > div.mx-2.md\\:mx-0 > div > div:nth-child(6) > div.w-full.max-w-\\[var\\(--max-width\\)\\].mx-auto.flex.flex-col > div.bg-card.rounded-xl.p-4.relative.group.max-w-\\[100vw\\].w-full.mt-12 > div.md\\:px-6.md\\:pb-6.relative.mt-4.p-0.overflow-y-hidden > div:nth-child(1) > div > div:nth-child(5) > div.mt-auto.mb-1.flex.justify-between.items-center > span",
 			"eps":   "#PAGE_CONTAINER > main > div.mx-2.md\\:mx-0 > div > div:nth-child(6) > div.w-full.max-w-\\[var\\(--max-width\\)\\].mx-auto.flex.flex-col > div.bg-card.rounded-xl.p-4.relative.group.max-w-\\[100vw\\].w-full.mt-12 > div.md\\:px-6.md\\:pb-6.relative.mt-4.p-0.overflow-y-hidden > div:nth-child(1) > div > div:nth-child(4) > div.mt-auto.mb-1.flex.justify-between.items-center > span",
@@ -92,6 +95,7 @@ func getAuvpConfig() SourceConfig {
 		Cleaners: map[string]func(string) string{
 			"price": cleanAuvpPrice,
 			"pe":    cleanAuvpRatio,
+			"pbv":   cleanAuvpRatio,
 			"psr":   cleanAuvpRatio,
 			"bvps":  cleanAuvpPrice,
 			"eps":   cleanAuvpPrice,
@@ -159,6 +163,7 @@ func getFundamentusConfig() SourceConfig {
 		Selectors: map[string]string{
 			"price": "body > div.center > div.conteudo.clearfix > table:nth-child(2) > tbody > tr:nth-child(1) > td.data.destaque.w3 > span",
 			"pe":    "body > div.center > div.conteudo.clearfix > table:nth-child(4) > tbody > tr:nth-child(2) > td:nth-child(4) > span",
+			"pbv":   "body > div.center > div.conteudo.clearfix > table:nth-child(4) > tbody > tr:nth-child(3) > td:nth-child(4) > span",
 			"psr":   "body > div.center > div.conteudo.clearfix > table:nth-child(4) > tbody > tr:nth-child(5) > td:nth-child(4) > span",
 			"bvps":  "body > div.center > div.conteudo.clearfix > table:nth-child(4) > tbody > tr:nth-child(3) > td:nth-child(6) > span",
 			"eps":   "body > div.center > div.conteudo.clearfix > table:nth-child(4) > tbody > tr:nth-child(2) > td:nth-child(6) > span",
@@ -167,6 +172,7 @@ func getFundamentusConfig() SourceConfig {
 		Cleaners: map[string]func(string) string{
 			"price": cleanFundamentusPrice,
 			"pe":    cleanFundamentusNumeric,
+			"pbv":   cleanFundamentusNumeric,
 			"psr":   cleanFundamentusNumeric,
 			"bvps":  cleanFundamentusPrice,
 			"eps":   cleanFundamentusPrice,

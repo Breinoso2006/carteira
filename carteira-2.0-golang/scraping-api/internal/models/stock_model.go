@@ -4,6 +4,7 @@ type StockData struct {
 	Symbol string
 	Price  *float64 // Preço da Ação
 	PE     *float64 // Price to Earnings (Preço/Lucro)
+	PBV		*float64 // Price to Book Value (Preço/Valor Patrimonial)
 	PSR    *float64 // Price to Sales Ratio (Preço/Vendas)
 	BVps   *float64 // Book Value Per Share (Valor Patrimonial Por Ação)
 	EPS    *float64 // Earnings Per Share (Lucro Por Ação)

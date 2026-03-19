@@ -94,6 +94,9 @@ func (sm *ScraperManager) mergeData(target *models.StockData, source *models.Sto
 	if target.PE == nil && source.PE != nil {
 		target.PE = source.PE
 	}
+	if target.PBV == nil && source.PBV != nil {
+		target.PBV = source.PBV
+	}
 	if target.PSR == nil && source.PSR != nil {
 		target.PSR = source.PSR
 	}
@@ -139,6 +142,8 @@ func (sm *ScraperManager) fillMissingFieldsFromOtherSources(data *models.StockDa
 						data.Price = value
 					case "pe":
 						data.PE = value
+					case "pbv":
+						data.PBV = value
 					case "psr":
 						data.PSR = value
 					case "bvps":
@@ -170,17 +175,10 @@ func (sm *ScraperManager) GetAvailableSources() []string {
 	return sm.order
 }
 
-func (sm *ScraperManager) hasValidData(data *models.StockData) bool {
-	return data.Price != nil ||
-		data.PE != nil ||
-		data.PSR != nil ||
-		data.BVps != nil ||
-		data.EPS != nil
-}
-
 func (sm *ScraperManager) isCompleteData(data *models.StockData) bool {
 	return data.Price != nil &&
 		data.PE != nil &&
+		data.PBV != nil &&
 		data.PSR != nil &&
 		data.BVps != nil &&
 		data.EPS != nil
