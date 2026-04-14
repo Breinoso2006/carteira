@@ -31,9 +31,9 @@ def calculate_percentages(tickers: dict, with_moment: bool = False):
             elif transiente_grade >= 60:
                 values["final grade"] = transiente_grade * 0.30
             elif transiente_grade >= 50:
-                values["final grade"] = transiente_grade * 0.15
+                values["final grade"] = transiente_grade * 0.20
             else:
-                values["final grade"] = transiente_grade * 0.05
+                values["final grade"] = transiente_grade * 0.10
 
             nota_total += values["final grade"]
 

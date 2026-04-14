@@ -35,31 +35,41 @@ func NewStock(ticker string, fundamentalistGrade float64) *Stock {
 }
 
 func (s *Stock) SetFinalGrade() {
-	s.setMoment()
-
-	transiente_grade := math.Round(
-		s.FundamentalistGrade * (s.FundamentalistGrade/100 + math.Sqrt(s.Moment/6)/2))
-
-	if transiente_grade >= 70 {
-		s.FinalGrade = transiente_grade * 0.40
-	} else if transiente_grade >= 60 {
-		s.FinalGrade = transiente_grade * 0.30
-	} else if transiente_grade >= 50 {
-		s.FinalGrade = transiente_grade * 0.15
-	} else {
-		s.FinalGrade = transiente_grade * 0.05
+	if err := s.setMoment(); err != nil {
+		return
 	}
+
+	alpha := 0.1
+
+	momentNorm := s.Moment / 6.0
+
+	s.FinalGrade = adjustScore(s.FundamentalistGrade * (1 + alpha*(momentNorm-0.5)))
+}
+
+func adjustScore(score float64) float64 {
+	normalized := score / 100.0
+
+	if normalized > 0.75 {
+		normalized *= 1.08
+	}
+	if normalized < 0.65 {
+		normalized *= 0.92
+	}
+
+	return math.Pow(normalized, 1.4)
 }
 
 func (s *Stock) setMoment() error {
 	client := http.NewHTTPClient(5 * time.Second)
-	body, err := client.Get("http://localhost:3000/" + s.Ticker)
+	body, err := client.Get("http://localhost:3001/" + s.Ticker)
 	if err != nil {
 		return err
 	}
 
 	var stockMomentData StockResponse
-	json.Unmarshal(body, &stockMomentData)
+	if err := json.Unmarshal(body, &stockMomentData); err != nil {
+		return err
+	}
 
 	s.calculateMoment(&stockMomentData)
 
