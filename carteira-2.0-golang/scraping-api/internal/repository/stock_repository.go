@@ -47,3 +47,8 @@ func (r *StockRepository) GetCacheStats() (int, time.Duration) {
 	items := r.cacheRepo.GetStats()
 	return items, r.cacheRepo.GetTTL()
 }
+
+// FlushCache removes all entries from the in-memory cache.
+func (r *StockRepository) FlushCache() {
+	r.cacheRepo.FlushAll()
+}

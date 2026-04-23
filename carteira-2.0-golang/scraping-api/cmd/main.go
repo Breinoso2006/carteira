@@ -6,6 +6,7 @@ import (
 	"github.com/breinoso2006/scraping-api/internal/config"
 	"github.com/breinoso2006/scraping-api/internal/repository"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
@@ -15,6 +16,7 @@ func main() {
 	}
 
 	app := fiber.New()
+	app.Use(cors.New())
 
 	stockRepo := repository.NewStockRepository(cfg.CacheTTlHours, cfg.CacheEnabled)
 
@@ -25,6 +27,11 @@ func main() {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.JSON(data)
+	})
+
+	app.Delete("/cache", func(c *fiber.Ctx) error {
+		stockRepo.FlushCache()
+		return c.JSON(fiber.Map{"message": "cache cleared"})
 	})
 
 	app.Listen(":3001")

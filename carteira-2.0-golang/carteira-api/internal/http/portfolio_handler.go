@@ -2,8 +2,11 @@ package http
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/breinoso2006/carteira-api/internal/repository"
+	"github.com/breinoso2006/carteira-api/internal/scoring"
+	"github.com/breinoso2006/carteira-api/internal/stock"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -24,9 +27,27 @@ func (h *PortfolioHandler) GetAll(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := h.repo.CalculateWeights(entries); err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	// Enriquece cada entrada com a nota final (fundamentalista + momento)
+	// antes de calcular os pesos relativos.
+	stocks := make([]*stock.Stock, len(entries))
+	var wg sync.WaitGroup
+	for i, e := range entries {
+		wg.Add(1)
+		go func(idx int, entry *scoring.PortfolioEntry) {
+			defer wg.Done()
+			s := stock.NewStock(entry.Ticker, entry.FundamentalistGrade)
+			s.SetFinalGrade()
+			stocks[idx] = s
+		}(i, e)
 	}
+	wg.Wait()
+
+	// Calcula os pesos usando a nota final (com momento incorporado)
+	finalGrades := make([]float64, len(entries))
+	for i, s := range stocks {
+		finalGrades[i] = s.FinalGrade
+	}
+	scoring.CalculateWeightsFromGrades(entries, finalGrades)
 
 	return c.JSON(entries)
 }

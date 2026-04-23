@@ -254,3 +254,8 @@ func (r *CacheRepository) GetStats() int {
 func (r *CacheRepository) GetTTL() time.Duration {
 	return r.ttl
 }
+
+// FlushAll removes all entries from the cache.
+func (r *CacheRepository) FlushAll() {
+	r.cache.Flush()
+}

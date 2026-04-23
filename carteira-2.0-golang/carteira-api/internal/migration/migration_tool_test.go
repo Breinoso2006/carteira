@@ -6,6 +6,7 @@ import (
 
 	"github.com/breinoso2006/carteira-api/internal/database"
 	"github.com/breinoso2006/carteira-api/internal/models"
+	"github.com/breinoso2006/carteira-api/internal/stock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +24,7 @@ func setupTestDB(t *testing.T) *database.Database {
 // makeStock is a helper that builds a *models.StockInPortfolio.
 func makeStock(ticker string, grade float64) *models.StockInPortfolio {
 	return &models.StockInPortfolio{
-		Stock: models.NewStock(ticker, grade),
+		Stock: stock.NewStock(ticker, grade),
 	}
 }
 

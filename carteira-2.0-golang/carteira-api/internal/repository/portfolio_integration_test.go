@@ -87,15 +87,17 @@ func TestPortfolioIntegration_WeightCalculation(t *testing.T) {
 	}
 	assert.InDelta(t, 100.0, totalWeight, 0.01, "weights must sum to 100%%")
 
-	// Verify each weight is proportional to its grade (total grade = 100).
+	// Weights are quadratic: 40²=1600, 30²=900, 20²=400, 10²=100, total=3000
+	// AAPL = 1600/3000*100 ≈ 53.33%, GOOG = 900/3000*100 = 30.00%
+	// MSFT = 400/3000*100 ≈ 13.33%, AMZN = 100/3000*100 ≈ 3.33%
 	byTicker := make(map[string]float64)
 	for _, e := range entries {
 		byTicker[e.Ticker] = e.Weight
 	}
-	assert.InDelta(t, 40.0, byTicker["AAPL"], 0.01)
-	assert.InDelta(t, 30.0, byTicker["GOOG"], 0.01)
-	assert.InDelta(t, 20.0, byTicker["MSFT"], 0.01)
-	assert.InDelta(t, 10.0, byTicker["AMZN"], 0.01)
+	assert.InDelta(t, 53.33, byTicker["AAPL"], 0.01)
+	assert.InDelta(t, 30.00, byTicker["GOOG"], 0.01)
+	assert.InDelta(t, 13.33, byTicker["MSFT"], 0.01)
+	assert.InDelta(t, 3.33, byTicker["AMZN"], 0.01)
 }
 
 // TestPortfolioIntegration_UpdateNonExistent verifies that updating a ticker that

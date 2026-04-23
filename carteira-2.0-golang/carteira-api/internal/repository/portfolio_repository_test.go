@@ -100,13 +100,14 @@ func TestPortfolioRepository_CalculateWeights(t *testing.T) {
 	}
 	assert.InDelta(t, 100.0, total, 0.01)
 
-	// Verify proportional weights.
+	// Weights are quadratic: 80²=6400, 20²=400, total=6800
+	// PETR4 = 6400/6800*100 ≈ 94.12%, VALE3 = 400/6800*100 ≈ 5.88%
 	byTicker := make(map[string]float64)
 	for _, e := range entries {
 		byTicker[e.Ticker] = e.Weight
 	}
-	assert.InDelta(t, 80.0, byTicker["PETR4"], 0.01)
-	assert.InDelta(t, 20.0, byTicker["VALE3"], 0.01)
+	assert.InDelta(t, 94.12, byTicker["PETR4"], 0.01)
+	assert.InDelta(t, 5.88, byTicker["VALE3"], 0.01)
 }
 
 func TestPortfolioRepository_EmptyDatabase(t *testing.T) {

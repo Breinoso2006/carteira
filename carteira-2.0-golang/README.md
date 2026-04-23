@@ -1,13 +1,29 @@
 # Carteira 2.0
 
-A portfolio management system built in Go, consisting of two independent microservices:
+Sistema de gestão de carteira de ações composto por dois microserviços Go e uma interface web React:
 
-- **carteira-api** — manages your stock portfolio with SQLite persistence and exposes a REST API for CRUD operations
-- **scraping-api** — scrapes real-time stock data from multiple sources (Investidor10, Auvp, Fundamentus) with an in-memory cache layer
+- **carteira-api** — gerencia o portfolio com persistência SQLite e expõe uma REST API para operações de CRUD
+- **scraping-api** — faz scraping de dados fundamentalistas de múltiplas fontes (Investidor10, Auvp, Fundamentus) com camada de cache em memória
+- **carteira-frontend** — SPA React que consome as duas APIs e oferece interface para gerenciar o portfolio e analisar indicadores fundamentalistas
 
 ```mermaid
 graph TD
-    Client(["Client"])
+    Browser(["Browser"])
+
+    subgraph carteira-frontend ["carteira-frontend · :5173"]
+        FE_App["App (navegação por estado)"]
+        FE_PS["Portfolio_Screen (CRUD)"]
+        FE_AS["Analysis_Screen (pesos)"]
+        FE_Modal["Stock_Details_Modal (indicadores)"]
+        FE_Client["API_Client (fetch)"]
+
+        FE_App --> FE_PS
+        FE_App --> FE_AS
+        FE_PS --> FE_Modal
+        FE_PS --> FE_Client
+        FE_AS --> FE_Client
+        FE_Modal --> FE_Client
+    end
 
     subgraph carteira-api ["carteira-api · :3002"]
         CA_Handler["portfolio_handler (Fiber routes)"]
@@ -35,102 +51,121 @@ graph TD
 
     SA_Scrapers -->|"HTTP scrape"| Internet(["Brazilian financial websites"])
 
-    Client -->|"GET · POST · PUT · DELETE /portfolio"| CA_Handler
-    Client -->|"GET /:ticker"| SA_Route
+    Browser --> FE_App
+    FE_Client -->|"GET · POST · PUT · DELETE /portfolio"| CA_Handler
+    FE_Client -->|"GET /:ticker"| SA_Route
 ```
 
 ---
 
-## Prerequisites
+## Pré-requisitos
 
-- **Go 1.21+** (both services use Go modules)
-- **GCC / CGO enabled** — required by `go-sqlite3` (a CGO-based SQLite driver)
-  - macOS: install Xcode Command Line Tools (`xcode-select --install`)
-  - Linux: install `build-essential` and `libsqlite3-dev`
-  - Windows: install [TDM-GCC](https://jmeubank.github.io/tdm-gcc/) or use WSL
-- **SQLite3** runtime library (usually pre-installed on macOS and most Linux distros)
+### Backend (carteira-api e scraping-api)
 
-> CGO must **not** be disabled. Do not set `CGO_ENABLED=0` when building or running either service.
+- **Go 1.21+** (ambos os serviços usam Go modules)
+- **GCC / CGO habilitado** — exigido pelo `go-sqlite3` (driver SQLite baseado em CGO)
+  - macOS: instale o Xcode Command Line Tools (`xcode-select --install`)
+  - Linux: instale `build-essential` e `libsqlite3-dev`
+  - Windows: instale o [TDM-GCC](https://jmeubank.github.io/tdm-gcc/) ou use WSL
+- **SQLite3** (geralmente pré-instalado no macOS e na maioria das distros Linux)
+
+> CGO **não** pode ser desabilitado. Não defina `CGO_ENABLED=0` ao compilar ou rodar os serviços.
+
+### Frontend (carteira-frontend)
+
+- **Node.js 18+**
+- **npm 9+**
 
 ---
 
 ## Getting Started
 
-### 1. Clone the repository
+### 1. Clone o repositório
 
 ```bash
 git clone <repo-url>
 cd carteira-2.0-golang
 ```
 
-### 2. Run carteira-api
+### 2. Rode a carteira-api
 
 ```bash
 cd carteira-api
 go run ./cmd/main.go
-# Server starts on http://localhost:3000
+# Servidor em http://localhost:3002
 ```
 
-### 3. Run scraping-api
+### 3. Rode a scraping-api
 
 ```bash
 cd scraping-api
 go run ./cmd/main.go
-# Server starts on http://localhost:3001
+# Servidor em http://localhost:3001
 ```
+
+### 4. Rode o carteira-frontend
+
+```bash
+cd carteira-frontend
+npm install
+npm run dev
+# Aplicação em http://localhost:5173
+```
+
+> As APIs precisam estar rodando antes de abrir o frontend.
 
 ---
 
-## Database Setup
+## Configuração do Banco de Dados
 
 ### SQLite (carteira-api)
 
-The database is created automatically — no manual setup is required.
+O banco é criado automaticamente — nenhuma configuração manual é necessária.
 
-- On first startup, `carteira-api` creates a SQLite file at the path specified by `DATABASE_PATH` (default: `./portfolio.db`).
-- The schema is applied automatically using idempotent `CREATE TABLE IF NOT EXISTS` statements.
-- An initial portfolio of 18 Brazilian stocks is seeded into the database on the first run. Subsequent restarts skip entries that already exist.
-- Schema migrations run automatically on startup. The current schema version is tracked in the `schema_version` table.
+- Na primeira inicialização, a `carteira-api` cria um arquivo SQLite no caminho definido por `DATABASE_PATH` (padrão: `./portfolio.db`).
+- O schema é aplicado automaticamente com instruções `CREATE TABLE IF NOT EXISTS`.
+- Um portfolio inicial com 18 ações brasileiras é inserido na primeira execução. Reinicializações subsequentes ignoram entradas já existentes.
+- Migrações de schema rodam automaticamente na inicialização. A versão atual é rastreada na tabela `schema_version`.
 
-#### Tables
+#### Tabelas
 
-| Table | Description |
+| Tabela | Descrição |
 |---|---|
-| `portfolio_entries` | Stores tickers and their fundamentalist grades |
-| `stock_cache` | Stores scraped stock data with expiry timestamps |
-| `schema_version` | Tracks applied schema migrations |
+| `portfolio_entries` | Armazena tickers e suas notas fundamentalistas |
+| `stock_cache` | Armazena dados de scraping com timestamps de expiração |
+| `schema_version` | Rastreia migrações de schema aplicadas |
 
-#### Manual migration (optional)
+#### Migração manual (opcional)
 
-Migrations are automatic, but if you need to inspect or reset the database:
+As migrações são automáticas, mas se precisar inspecionar ou resetar o banco:
 
 ```bash
-# Inspect the database
+# Inspecionar o banco
 sqlite3 ./portfolio.db ".tables"
 sqlite3 ./portfolio.db "SELECT * FROM portfolio_entries;"
 
-# Reset (deletes all data — use with caution)
+# Resetar (apaga todos os dados — use com cuidado)
 rm ./portfolio.db
-# Restart the service to recreate and reseed
+# Reinicie o serviço para recriar e reinserir os dados
 ```
 
 ---
 
-## Configuration
+## Configuração
 
-Both services share the same environment variables. Set them before starting each service.
+Ambos os serviços Go compartilham as mesmas variáveis de ambiente. Defina-as antes de iniciar cada serviço.
 
-### Environment Variables
+### Variáveis de Ambiente
 
-| Variable | Default | Description |
+| Variável | Padrão | Descrição |
 |---|---|---|
-| `DATABASE_PATH` | `./portfolio.db` | Path to the SQLite database file. The parent directory is created automatically if it does not exist. |
-| `CACHE_TTL_HOURS` | `24` | How long (in hours) scraped stock data is considered valid before a fresh scrape is triggered. Must be a positive integer; invalid values fall back to the default. |
-| `CACHE_ENABLED` | `true` | Set to `false` to disable the cache and always fetch fresh data from scrapers. Any value other than `false` is treated as `true`. |
+| `DATABASE_PATH` | `./portfolio.db` | Caminho para o arquivo SQLite. O diretório pai é criado automaticamente se não existir. |
+| `CACHE_TTL_HOURS` | `24` | Por quanto tempo (em horas) os dados de scraping são considerados válidos antes de um novo scraping ser disparado. Deve ser um inteiro positivo; valores inválidos usam o padrão. |
+| `CACHE_ENABLED` | `true` | Defina como `false` para desabilitar o cache e sempre buscar dados frescos dos scrapers. Qualquer valor diferente de `false` é tratado como `true`. |
 
-### Examples
+### Exemplos
 
-#### Development (defaults, verbose paths)
+#### Desenvolvimento (padrões)
 
 ```bash
 export DATABASE_PATH=./dev-portfolio.db
@@ -138,7 +173,7 @@ export CACHE_TTL_HOURS=1
 export CACHE_ENABLED=true
 ```
 
-#### Production
+#### Produção
 
 ```bash
 export DATABASE_PATH=/var/data/carteira/portfolio.db
@@ -146,13 +181,13 @@ export CACHE_TTL_HOURS=24
 export CACHE_ENABLED=true
 ```
 
-#### Cache disabled (always scrape fresh data)
+#### Cache desabilitado (sempre scraping fresco)
 
 ```bash
 export CACHE_ENABLED=false
 ```
 
-#### Short TTL for testing
+#### TTL curto para testes
 
 ```bash
 export CACHE_TTL_HOURS=1
@@ -161,9 +196,9 @@ export DATABASE_PATH=/tmp/test-portfolio.db
 
 ---
 
-## API Reference
+## Referência da API
 
-### carteira-api (port 3000)
+### carteira-api (porta 3002)
 
 | Method | Path | Description |
 |---|---|---|
@@ -172,7 +207,7 @@ export DATABASE_PATH=/tmp/test-portfolio.db
 | `PUT` | `/portfolio` | Updates an existing stock's fundamentalist grade |
 | `DELETE` | `/portfolio/:ticker` | Removes a stock from the portfolio |
 
-#### POST / PUT request body
+#### Corpo da requisição POST / PUT
 
 ```json
 {
@@ -181,9 +216,9 @@ export DATABASE_PATH=/tmp/test-portfolio.db
 }
 ```
 
-`fundamentalist_grade` must be between 0 (exclusive) and 100 (inclusive).
+`fundamentalist_grade` deve estar entre 0 (exclusivo) e 100 (inclusivo).
 
-#### GET /portfolio response
+#### Resposta de GET /portfolio
 
 ```json
 [
@@ -198,13 +233,13 @@ export DATABASE_PATH=/tmp/test-portfolio.db
 ]
 ```
 
-### scraping-api (port 3001)
+### scraping-api (porta 3001)
 
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/:ticker` | Returns scraped stock data for the given ticker |
 
-#### GET /:ticker response
+#### Resposta de GET /:ticker
 
 ```json
 {
@@ -223,40 +258,51 @@ export DATABASE_PATH=/tmp/test-portfolio.db
 
 ---
 
-## Running Tests
+## Rodando os Testes
 
 ```bash
-# carteira-api tests
+# Testes da carteira-api
 cd carteira-api
 go test ./...
 
-# scraping-api tests
+# Testes da scraping-api
 cd scraping-api
 go test ./...
+
+# Testes do carteira-frontend
+cd carteira-frontend
+npx vitest --run
 ```
 
 ---
 
-## Project Structure
+## Estrutura do Projeto
 
 ```
 carteira-2.0-golang/
-├── carteira-api/          # Portfolio management service (port 3000)
-│   ├── cmd/main.go        # Entry point
+├── carteira-api/          # Serviço de gestão de portfolio (porta 3002)
+│   ├── cmd/main.go        # Ponto de entrada
 │   └── internal/
-│       ├── config/        # Environment variable loading
-│       ├── database/      # SQLite connection and schema management
-│       ├── http/          # Fiber HTTP handlers
-│       ├── migration/     # One-time data migration tool
-│       ├── models/        # Domain models
-│       └── repository/    # Portfolio data access layer
-└── scraping-api/          # Stock data scraping service (port 3001)
-    ├── cmd/main.go        # Entry point
-    └── internal/
-        ├── cache/         # In-memory cache with TTL
-        ├── config/        # Environment variable loading
-        ├── http/          # HTTP client helpers
-        ├── models/        # Stock data models
-        ├── repository/    # Stock data access layer
-        └── scraping/      # Scrapers for Investidor10, Auvp, Fundamentus
+│       ├── config/        # Carregamento de variáveis de ambiente
+│       ├── database/      # Conexão SQLite e gerenciamento de schema
+│       ├── http/          # Handlers HTTP (Fiber)
+│       ├── migration/     # Ferramenta de migração de dados
+│       ├── models/        # Modelos de domínio
+│       └── repository/    # Camada de acesso a dados do portfolio
+├── scraping-api/          # Serviço de scraping de dados fundamentalistas (porta 3001)
+│   ├── cmd/main.go        # Ponto de entrada
+│   └── internal/
+│       ├── cache/         # Cache em memória com TTL
+│       ├── config/        # Carregamento de variáveis de ambiente
+│       ├── http/          # Helpers de cliente HTTP
+│       ├── models/        # Modelos de dados de ações
+│       ├── repository/    # Camada de acesso a dados de ações
+│       └── scraping/      # Scrapers para Investidor10, Auvp e Fundamentus
+└── carteira-frontend/     # Interface web React (porta 5173)
+    ├── src/
+    │   ├── api/           # API_Client — chamadas HTTP centralizadas
+    │   ├── components/    # Componentes React (telas, formulário, modal, lista)
+    │   ├── utils/         # Lógica de coloração de indicadores
+    │   └── styles/        # Estilos globais
+    └── package.json
 ```

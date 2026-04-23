@@ -1,127 +1,139 @@
 # scraping-api
 
-Stock data scraping service with an in-memory cache layer. Part of the [Carteira 2.0](../README.md) system.
+Serviço de scraping de dados fundamentalistas com camada de cache em memória. Parte do sistema [Carteira 2.0](../README.md).
 
-Scrapes real-time stock fundamentals from multiple Brazilian financial sources (Investidor10, Auvp, Fundamentus) and caches successful results to reduce redundant requests.
+Faz scraping de fundamentos de ações em tempo real a partir de múltiplas fontes financeiras brasileiras (Investidor10, Auvp, Fundamentus) e armazena os resultados em cache para reduzir requisições redundantes.
 
-Runs on **port 3001**.
+Roda na **porta 3001**.
 
 ---
 
-## Prerequisites
+## Pré-requisitos
 
 - Go 1.21+
-- Internet access (the service scrapes external websites)
+- Acesso à internet (o serviço faz scraping de sites externos)
 
-> No CGO or SQLite required — this service uses a pure-Go in-memory cache.
+> Não requer CGO nem SQLite — usa cache em memória puro Go.
 
 ---
 
-## Running
+## Rodando
 
 ```bash
 go run ./cmd/main.go
 ```
 
-The service will:
-1. Load configuration from environment variables
-2. Initialize the in-memory cache with the configured TTL
-3. Start the HTTP server on `:3001`
+O serviço irá:
+1. Carregar configuração das variáveis de ambiente
+2. Inicializar o cache em memória com o TTL configurado
+3. Iniciar o servidor HTTP na porta `:3001`
 
 ---
 
-## Configuration
+## Configuração
 
-| Variable | Default | Description |
+| Variável | Padrão | Descrição |
 |---|---|---|
-| `DATABASE_PATH` | `./portfolio.db` | Loaded by the shared config but not used by this service. |
-| `CACHE_TTL_HOURS` | `24` | How long (in hours) scraped stock data is considered valid. Must be a positive integer; invalid values fall back to `24`. |
-| `CACHE_ENABLED` | `true` | Set to `false` to bypass the cache and always scrape fresh data. Any value other than `false` is treated as `true`. |
+| `CACHE_TTL_HOURS` | `24` | Por quanto tempo (em horas) os dados de scraping são considerados válidos. Deve ser um inteiro positivo; valores inválidos usam `24`. |
+| `CACHE_ENABLED` | `true` | Defina como `false` para ignorar o cache e sempre fazer scraping fresco. Qualquer valor diferente de `false` é tratado como `true`. |
 
-### Examples
+### Exemplos
 
 ```bash
-# Development — short TTL so data refreshes quickly
+# Desenvolvimento — TTL curto para dados mais frescos
 CACHE_TTL_HOURS=1 go run ./cmd/main.go
 
-# Production — 24-hour cache (default)
+# Produção — cache de 24 horas (padrão)
 CACHE_TTL_HOURS=24 CACHE_ENABLED=true go run ./cmd/main.go
 
-# Disable cache entirely (always scrape fresh)
+# Cache desabilitado (sempre scraping fresco)
 CACHE_ENABLED=false go run ./cmd/main.go
-
-# Custom TTL via environment file
-export CACHE_TTL_HOURS=6
-export CACHE_ENABLED=true
-go run ./cmd/main.go
 ```
 
 ---
 
-## Cache Behaviour
+## Comportamento do Cache
 
-- **Cache hit**: If valid (non-expired, no invalid fields) data exists for a ticker, it is returned immediately without scraping.
-- **Cache miss**: The service tries each configured scraper in order. The first scraper that returns complete data (no null/invalid fields) wins, and the result is stored in the cache.
-- **Partial data**: If a scraper returns data with invalid/null fields, that result is **not** cached. The next scraper is tried.
-- **All scrapers fail**: The error is returned to the caller. The cache is not modified.
-- **Cache disabled** (`CACHE_ENABLED=false`): Every request triggers a fresh scrape regardless of cached state.
-- **Expired entry**: Treated as a cache miss; a fresh scrape is triggered.
+- **Cache hit**: Se existirem dados válidos (não expirados) para um ticker, são retornados imediatamente sem scraping.
+- **Cache miss**: O serviço tenta cada scraper configurado em ordem. O primeiro que retornar dados completos vence, e o resultado é armazenado em cache.
+- **Dados parciais**: Se um scraper retornar dados com campos nulos ou inválidos, o resultado **não é cacheado** e o próximo scraper é tentado.
+- **Todos os scrapers falham**: O erro é retornado ao chamador. O cache não é modificado.
+- **Cache desabilitado** (`CACHE_ENABLED=false`): Toda requisição dispara um scraping fresco.
+- **Entrada expirada**: Tratada como cache miss; um scraping fresco é disparado.
 
 ---
 
-## API Endpoints
+## API
 
 ### GET /:ticker
 
-Returns stock fundamentals for the given ticker symbol.
+Retorna os fundamentos de uma ação pelo código do ticker.
 
 ```
 GET /WEGE3
 ```
 
-**Response 200**
+**Resposta 200**
 
 ```json
 {
-  "symbol": "WEGE3",
-  "price": 35.50,
-  "pe": 28.4,
-  "pbv": 8.1,
-  "psr": 4.2,
-  "bvps": 4.38,
-  "eps": 1.25,
-  "dy": 1.8,
-  "source": "Investidor10",
-  "invalid_fields": []
+  "Symbol": "WEGE3",
+  "Price": 35.50,
+  "PE": 28.4,
+  "PBV": 8.1,
+  "PSR": 4.2,
+  "BVps": 4.38,
+  "EPS": 1.25,
+  "DY": 1.8,
+  "Source": "Investidor10"
 }
 ```
 
-**Response 404** — ticker not found or all scrapers failed
+**Resposta 404** — ticker não encontrado ou todos os scrapers falharam
 
 ```json
 { "error": "failed to get stock data for XXXX: ..." }
 ```
 
-### Fields
+### Campos da resposta
 
-| Field | Type | Description |
+| Campo | Tipo | Descrição |
 |---|---|---|
-| `symbol` | string | Ticker symbol |
-| `price` | float | Current price |
-| `pe` | float | Price-to-Earnings ratio |
-| `pbv` | float | Price-to-Book Value ratio |
-| `psr` | float | Price-to-Sales ratio |
-| `bvps` | float | Book Value per Share |
-| `eps` | float | Earnings per Share |
-| `dy` | float | Dividend Yield (%) |
-| `source` | string | Data source that provided the result |
-| `invalid_fields` | array | List of fields that could not be scraped |
+| `Symbol` | string | Código do ticker |
+| `Price` | float | Preço atual |
+| `PE` | float | Preço/Lucro |
+| `PBV` | float | Preço/Valor Patrimonial |
+| `PSR` | float | Preço/Receita |
+| `BVps` | float | Valor Patrimonial por Ação |
+| `EPS` | float | Lucro por Ação |
+| `DY` | float | Dividend Yield (%) |
+| `Source` | string | Fonte que forneceu os dados |
 
-The response format is identical whether data came from cache or a fresh scrape.
+> Campos com valor `0` indicam que o scraper não conseguiu obter aquele dado para o ticker consultado.
+
+O formato da resposta é idêntico independente de os dados virem do cache ou de um scraping fresco.
 
 ---
 
-## Running Tests
+### DELETE /cache
+
+Remove todas as entradas do cache em memória. Útil para forçar scraping fresco em todas as próximas requisições.
+
+```
+DELETE /cache
+```
+
+**Resposta 200**
+
+```json
+{ "message": "cache cleared" }
+```
+
+> Este endpoint não tem efeito quando `CACHE_ENABLED=false`, pois o cache já está desabilitado.
+
+---
+
+## Rodando os Testes
 
 ```bash
 go test ./...
@@ -129,28 +141,28 @@ go test ./...
 
 ---
 
-## Project Structure
+## Estrutura do Projeto
 
 ```
 scraping-api/
 ├── cmd/
-│   └── main.go                  # Entry point — wires config, cache, and routes
+│   └── main.go                  # Ponto de entrada — configura cache e rotas
 └── internal/
     ├── cache/
-    │   └── cache_repository.go  # In-memory cache with TTL (go-cache)
+    │   └── cache_repository.go  # Cache em memória com TTL (go-cache)
     ├── config/
-    │   └── config.go            # Loads CACHE_TTL_HOURS, CACHE_ENABLED, DATABASE_PATH
+    │   └── config.go            # Carrega CACHE_TTL_HOURS e CACHE_ENABLED
     ├── http/
-    │   └── http_client.go       # Shared HTTP client for scrapers
+    │   └── http_client.go       # Cliente HTTP compartilhado pelos scrapers
     ├── models/
-    │   └── stock_model.go       # StockData model
+    │   └── stock_model.go       # Modelo StockData
     ├── repository/
-    │   └── stock_repository.go  # Orchestrates cache + scraper
+    │   └── stock_repository.go  # Orquestra cache + scraper
     └── scraping/
-        ├── scraper.go           # Scraper interface
-        ├── scraper_manager.go   # Tries scrapers in order, returns first complete result
-        ├── scraper_rescraper.go # Re-scrape logic for partial results
-        ├── scrapers_configs.go  # Per-source field selectors
-        ├── sources_config.go    # Source URLs and priorities
-        └── helpers.go           # Parsing utilities
+        ├── scraper.go           # Interface do scraper
+        ├── scraper_manager.go   # Tenta scrapers em ordem, retorna o primeiro resultado completo
+        ├── scraper_rescraper.go # Lógica de re-scraping para resultados parciais
+        ├── scrapers_configs.go  # Seletores de campos por fonte
+        ├── sources_config.go    # URLs e prioridades das fontes
+        └── helpers.go           # Utilitários de parsing
 ```

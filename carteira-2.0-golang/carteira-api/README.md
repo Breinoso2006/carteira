@@ -121,7 +121,7 @@ Returns all portfolio entries with calculated weights.
 ]
 ```
 
-Weight is calculated as each stock's grade divided by the sum of all grades.
+Weight is calculated using quadratic amplification: each stock's weight is proportional to `grade²`, which widens the gap between higher and lower graded stocks. For example, a stock with grade 80 receives a weight proportional to 6400, while one with grade 60 receives 3600 — resulting in roughly 78% vs 22% instead of the linear 57% vs 43%.
 
 ---
 
@@ -214,8 +214,10 @@ carteira-api/
     ├── migration/
     │   └── migration_tool.go     # Seeds initial portfolio data
     ├── models/
-    │   ├── portfolio_model.go    # PortfolioEntry model
-    │   └── stock_model.go        # Stock / StockInPortfolio models
-    └── repository/
-        └── portfolio_repository.go  # CRUD operations against SQLite
+    │   ├── portfolio_model.go    # Portfolio / StockInPortfolio — aliases scoring.PortfolioEntry
+    │   └── stock_model.go        # Stock model with moment and final grade calculation
+    ├── repository/
+    │   └── portfolio_repository.go  # CRUD operations against SQLite
+    └── scoring/
+        └── scoring.go       # PortfolioEntry type, BoostedGrade and CalculateWeights (centralised)
 ```
