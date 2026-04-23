@@ -5,6 +5,7 @@ go 1.25.5
 require (
 	github.com/PuerkitoBio/goquery v1.11.0
 	github.com/gofiber/fiber/v2 v2.52.11
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 )
 
 require (

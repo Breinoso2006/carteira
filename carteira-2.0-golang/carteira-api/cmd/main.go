@@ -1,11 +1,34 @@
 package main
 
 import (
+	"fmt"
+	"log"
+
+	"github.com/breinoso2006/carteira-api/internal/config"
+	"github.com/breinoso2006/carteira-api/internal/database"
+	"github.com/breinoso2006/carteira-api/internal/http"
+	"github.com/breinoso2006/carteira-api/internal/migration"
 	"github.com/breinoso2006/carteira-api/internal/models"
+	"github.com/breinoso2006/carteira-api/internal/repository"
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
-	stocks := []*models.StockInPortfolio{
+	// Load configuration from environment variables.
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Open (or create) the SQLite database and apply migrations.
+	db, err := database.NewDatabase(cfg.DatabasePath)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer db.Close()
+
+	// Seed the database with the initial in-memory portfolio on first run.
+	initialPortfolio := []*models.StockInPortfolio{
 		{Stock: models.NewStock("ALUP3", 77.5)},
 		{Stock: models.NewStock("BBSE3", 77.5)},
 		{Stock: models.NewStock("BMEB4", 75)},
@@ -26,6 +49,28 @@ func main() {
 		{Stock: models.NewStock("WIZC3", 75)},
 	}
 
-	portfolio := &models.Portfolio{Stocks: stocks}
-	portfolio.CalculateWeights()
+	migrationTool := migration.NewMigrationTool(db)
+
+	if err := migrationTool.MigratePortfolio(initialPortfolio); err != nil {
+		log.Fatalf("Failed to migrate portfolio: %v", err)
+	}
+
+	if err := migrationTool.VerifyMigration(initialPortfolio); err != nil {
+		log.Fatalf("Migration verification failed: %v", err)
+	}
+
+	// Wire up the repository and HTTP handler.
+	portfolioRepo := repository.NewPortfolioRepository(db)
+	handler := http.NewPortfolioHandler(portfolioRepo)
+
+	app := fiber.New()
+	app.Get("/portfolio", handler.GetAll)
+	app.Post("/portfolio", handler.Add)
+	app.Put("/portfolio", handler.Update)
+	app.Delete("/portfolio/:ticker", handler.Remove)
+
+	fmt.Println("Server starting on :3000")
+	if err := app.Listen(":3002"); err != nil {
+		log.Fatalf("Server error: %v", err)
+	}
 }

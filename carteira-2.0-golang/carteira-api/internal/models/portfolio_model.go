@@ -3,7 +3,30 @@ package models
 import (
 	"fmt"
 	"sync"
+	"time"
 )
+
+// PortfolioEntry represents a single stock entry in the portfolio database.
+type PortfolioEntry struct {
+	ID                  int64     `json:"id"`
+	Ticker              string    `json:"ticker"`
+	FundamentalistGrade float64   `json:"fundamentalist_grade"`
+	Weight              float64   `json:"weight,omitempty"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+// Validate checks that the PortfolioEntry has a non-empty ticker and a
+// fundamentalist grade in the valid range (0, 100].
+func (e *PortfolioEntry) Validate() error {
+	if e.Ticker == "" {
+		return fmt.Errorf("portfolio entry: ticker must not be empty")
+	}
+	if e.FundamentalistGrade <= 0 || e.FundamentalistGrade > 100 {
+		return fmt.Errorf("portfolio entry: fundamentalist_grade must be between 0 and 100, got %.2f", e.FundamentalistGrade)
+	}
+	return nil
+}
 
 type StockInPortfolio struct {
 	Stock  *Stock
